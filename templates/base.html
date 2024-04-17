@@ -32,9 +32,6 @@
 </header>
 <!-- Begin page content -->
 <main role="main" class="container">
-    {% if current_user.is_authenticated %}
-        <a href="jobs" class="btn btn-secondary">Добавить работу</a>
-    {% endif %}
     {% block content %}{% endblock %}
 </main>
 </body>

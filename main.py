@@ -1,6 +1,6 @@
 import datetime
 
-from flask import Flask
+from flask import Flask, request, abort
 from flask import render_template, redirect
 
 from flask_login import LoginManager, login_required, current_user
@@ -85,9 +85,9 @@ def logout():
     return redirect("/")
 
 
-@app.route('/jobs',  methods=['GET', 'POST'])
+@app.route('/job',  methods=['GET', 'POST'])
 @login_required
-def add_news():
+def add_job():
     form = JobsForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
@@ -104,6 +104,56 @@ def add_news():
         return redirect('/')
     return render_template('jobs.html', title='Добавление работы',
                            form=form)
+
+
+@app.route('/job/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_job(id):
+    form = JobsForm()
+    if request.method == "GET":
+        db_sess = db_session.create_session()
+        job = db_sess.query(Jobs).filter(Jobs.id == id,
+                                         ((Jobs.user == current_user) | (current_user.id == 1))).first()
+        if job:
+            form.job.data = job.job
+            form.work_size.data = job.work_size
+            form.collaborators.data = job.collaborators
+            form.is_finished.data = job.is_finished
+        else:
+            abort(404)
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        job = db_sess.query(Jobs).filter(Jobs.id == id,
+                                         ((Jobs.user == current_user) | (current_user.id == 1))).first()
+        if job:
+            job.job = form.job.data
+            job.team_leader = current_user.id
+            job.work_size = form.work_size.data
+            job.collaborators = form.collaborators.data
+            job.end_date = job.start_date + datetime.timedelta(60 * 60 * job.work_size)
+            job.is_finished = form.is_finished.data
+            db_sess.commit()
+            return redirect('/')
+        else:
+            abort(404)
+    return render_template('jobs.html',
+                           title='Редактирование новости',
+                           form=form
+                           )
+
+
+@app.route('/job_delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+def job_delete(id):
+    db_sess = db_session.create_session()
+    job = db_sess.query(Jobs).filter(Jobs.id == id,
+                                      ((Jobs.user == current_user) | (current_user.id == 1))).first()
+    if job:
+        db_sess.delete(job)
+        db_sess.commit()
+    else:
+        abort(404)
+    return redirect('/')
 
 
 def main():
