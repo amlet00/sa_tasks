@@ -4,10 +4,12 @@ from sqlalchemy import orm
 
 from .db_session import SqlAlchemyBase
 
+from flask_login import UserMixin
+
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
-class User(SqlAlchemyBase):
+class User(SqlAlchemyBase, UserMixin):
     __tablename__ = 'users'
 
     id = sqlalchemy.Column(sqlalchemy.Integer,
