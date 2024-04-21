@@ -11,6 +11,7 @@ from data import db_session
 from data.users import User
 from data.jobs import Jobs
 from data.departments import Department
+from data.category import Category
 
 from forms.user import RegisterForm, LoginForm
 from forms.job import JobsForm
@@ -98,11 +99,18 @@ def add_job():
         job.team_leader = current_user.id
         job.work_size = form.work_size.data
         job.collaborators = form.collaborators.data
-        job.end_date = datetime.datetime.now() + datetime.timedelta(60 * 60 * job.work_size)
+        job.end_date = datetime.datetime.now() + datetime.timedelta(hours=job.work_size)
         job.is_finished = form.is_finished.data
-        current_user.jobs.append(job)
-        db_sess.merge(current_user)
+        category = db_sess.query(Category).filter(Category.id == form.category.data).first()
+        if not category:
+            category = Category(id=form.category.data)
+        category = db_sess.merge(category)
+        job.categories.append(category)
+        user = db_sess.merge(current_user)
+        user.jobs.append(job)
+        db_sess.merge(user)
         db_sess.commit()
+
         return redirect('/')
     return render_template('jobs.html', title='Добавление работы',
                            form=form)
@@ -120,7 +128,10 @@ def edit_job(id):
             form.job.data = job.job
             form.work_size.data = job.work_size
             form.collaborators.data = job.collaborators
+            form.category.data = job.categories[0].id
             form.is_finished.data = job.is_finished
+            job.categories.remove(job.categories[0])
+            db_sess.commit()
         else:
             abort(404)
     if form.validate_on_submit():
@@ -131,8 +142,14 @@ def edit_job(id):
             job.job = form.job.data
             job.work_size = form.work_size.data
             job.collaborators = form.collaborators.data
-            job.end_date = job.start_date + datetime.timedelta(60 * 60 * job.work_size)
+            job.end_date = job.start_date + datetime.timedelta(hours=job.work_size)
             job.is_finished = form.is_finished.data
+            category = db_sess.query(Category).filter(Category.id == form.category.data).first()
+            if not category:
+                category = Category(id=form.category.data)
+            category = db_sess.merge(category)
+            job.categories.append(category)
+            db_sess.merge(job)
             db_sess.commit()
             return redirect('/')
         else:
@@ -148,8 +165,9 @@ def edit_job(id):
 def job_delete(id):
     db_sess = db_session.create_session()
     job = db_sess.query(Jobs).filter(Jobs.id == id,
-                                      ((Jobs.user == current_user) | (current_user.id == 1))).first()
+                                     ((Jobs.user == current_user) | (current_user.id == 1))).first()
     if job:
+        job.categories.remove(job.categories[0])
         db_sess.delete(job)
         db_sess.commit()
     else:

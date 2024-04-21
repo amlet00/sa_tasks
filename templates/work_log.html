@@ -17,15 +17,19 @@
             <th>Team leader</th>
             <th>Duration</th>
             <th>List of collaborators</th>
+            <th>Category</th>
             <th>Is finished</th>
         </tr>
     </thead>
     <tbody>
         <tr>
             <td>{{ item.job }}</td>
-            <td>{{ item.user.surname }} {{item.user.name }}</td>
+            <td>{{ item.user.surname }} {{ item.user.name }}</td>
             <td>{{ item.work_size }}</td>
             <td>{{ item.collaborators }}</td>
+            {% for category in item.categories %}
+                <td>{{ category.id }}</td>
+            {% endfor %}
             {% if item.is_finished == 1 %}
                 <td>Is finished</td>
             {% else %}

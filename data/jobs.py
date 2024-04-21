@@ -22,5 +22,10 @@ class Jobs(SqlAlchemyBase):
 
     user = orm.relationship('User')
 
+    categories = orm.relationship("Category",
+                                  secondary="association",
+                                  backref="jobs",
+                                  cascade="delete")
+
     def __repr__(self):
         return f"<Job> {self.job}"
