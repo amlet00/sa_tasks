@@ -27,6 +27,7 @@ class User(SqlAlchemyBase, UserMixin):
                                       default=datetime.datetime.now)
 
     jobs = orm.relationship("Jobs", back_populates='user')
+    department = orm.relationship("Department", back_populates='user')
 
     def __repr__(self):
         return f"<Colonist> {self.id} {self.surname} {self.name}"

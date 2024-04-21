@@ -10,9 +10,11 @@ from data import db_session
 
 from data.users import User
 from data.jobs import Jobs
+from data.departments import Department
 
 from forms.user import RegisterForm, LoginForm
 from forms.job import JobsForm
+from forms.department import DepartmentForm
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
@@ -127,7 +129,6 @@ def edit_job(id):
                                          ((Jobs.user == current_user) | (current_user.id == 1))).first()
         if job:
             job.job = form.job.data
-            job.team_leader = current_user.id
             job.work_size = form.work_size.data
             job.collaborators = form.collaborators.data
             job.end_date = job.start_date + datetime.timedelta(60 * 60 * job.work_size)
@@ -154,6 +155,80 @@ def job_delete(id):
     else:
         abort(404)
     return redirect('/')
+
+
+@app.route('/department',  methods=['GET', 'POST'])
+@login_required
+def add_department():
+    form = DepartmentForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        department = Department()
+        department.title = form.title.data
+        department.chief = current_user.id
+        department.members = form.members.data
+        department.email = form.email.data
+        current_user.department.append(department)
+        db_sess.merge(current_user)
+        db_sess.commit()
+        return redirect('/department_log')
+    return render_template('department.html', title='Добавление депортамента',
+                           form=form)
+
+
+@app.route('/department/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_department(id):
+    form = DepartmentForm()
+    if request.method == "GET":
+        db_sess = db_session.create_session()
+        department = db_sess.query(Department).filter(Department.id == id,
+                                                      ((Department.user == current_user) | (
+                                                                  current_user.id == 1))).first()
+        if department:
+            form.title.data = department.title
+            form.members.data = department.members
+            form.email.data = department.email
+        else:
+            abort(404)
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        department = db_sess.query(Department).filter(Department.id == id,
+                                                      ((Department.user == current_user) | (
+                                                                  current_user.id == 1))).first()
+        if department:
+            department.title = form.title.data
+            department.members = form.members.data
+            department.email = form.email.data
+            db_sess.commit()
+            return redirect('/department_log')
+        else:
+            abort(404)
+    return render_template('department.html',
+                           title='Редактирование новости',
+                           form=form
+                           )
+
+
+@app.route('/department_delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+def department_delete(id):
+    db_sess = db_session.create_session()
+    department = db_sess.query(Department).filter(Department.id == id,
+                                                  ((Department.user == current_user) | (current_user.id == 1))).first()
+    if department:
+        db_sess.delete(department)
+        db_sess.commit()
+    else:
+        abort(404)
+    return redirect('/department_log')
+
+
+@app.route("/department_log")
+def department_log():
+    db_sess = db_session.create_session()
+    departments = db_sess.query(Department).all()
+    return render_template("department_log.html", departments=departments)
 
 
 def main():

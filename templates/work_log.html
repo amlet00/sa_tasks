@@ -2,9 +2,12 @@
 
 {% block content %}
 <h2>Work Log</h2>
-{% if current_user.is_authenticated %}
-    <a href="job" class="btn btn-secondary">Добавить работу</a>
-{% endif %}
+<nav>
+    <a href="department_log" class="btn btn-secondary">Back to Departments</a>
+    {% if current_user.is_authenticated %}
+        <a href="job" class="btn btn-secondary">add Job</a>
+    {% endif %}
+</nav>
 {% for item in jobs %}
 <h3>Action # {{ item.id }}</h3>
 <table class="table table-bordered">
@@ -34,10 +37,10 @@
 {% if current_user.is_authenticated and (current_user == item.user or current_user.id == 1) %}
     <div>
         <a href="/job/{{ item.id }}" class="btn btn-warning">
-            Изменить
+            Edit
         </a>
         <a href="/job_delete/{{ item.id }}" class="btn btn-danger">
-            Удалить
+            Delete
         </a>
     </div>
 {% endif %}
