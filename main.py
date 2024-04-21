@@ -8,6 +8,8 @@ from flask_login import logout_user, login_user
 
 from data import db_session
 
+from data import jobs_api
+
 from data.users import User
 from data.jobs import Jobs
 from data.departments import Department
@@ -98,7 +100,7 @@ def add_job():
         job.team_leader = current_user.id
         job.work_size = form.work_size.data
         job.collaborators = form.collaborators.data
-        job.end_date = datetime.datetime.now() + datetime.timedelta(60 * 60 * job.work_size)
+        job.end_date = datetime.datetime.now() + datetime.timedelta(hours=job.work_size)
         job.is_finished = form.is_finished.data
         current_user.jobs.append(job)
         db_sess.merge(current_user)
@@ -131,7 +133,7 @@ def edit_job(id):
             job.job = form.job.data
             job.work_size = form.work_size.data
             job.collaborators = form.collaborators.data
-            job.end_date = job.start_date + datetime.timedelta(60 * 60 * job.work_size)
+            job.end_date = job.start_date + datetime.timedelta(hours=job.work_size)
             job.is_finished = form.is_finished.data
             db_sess.commit()
             return redirect('/')
@@ -233,7 +235,7 @@ def department_log():
 
 def main():
     db_session.global_init("db/mars.db")
-
+    app.register_blueprint(jobs_api.blueprint)
     app.run(port=8080, host='127.0.0.1')
 
 
