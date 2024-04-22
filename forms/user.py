@@ -12,6 +12,7 @@ class RegisterForm(FlaskForm):
     speciality = StringField('Профессия', validators=[DataRequired()])
     address = StringField('Адрес', validators=[DataRequired()])
     email = EmailField('Почта', validators=[DataRequired()])
+    city_from = StringField('Место проживания', validators=[DataRequired()])
     password = PasswordField('Пароль', validators=[DataRequired()])
     password_again = PasswordField('Повторите пароль', validators=[DataRequired()])
 

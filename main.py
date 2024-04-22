@@ -1,7 +1,9 @@
 import datetime
+import requests
 
 from flask import Flask, request, abort
 from flask import render_template, redirect
+from flask import make_response, jsonify
 
 from flask_login import LoginManager, login_required, current_user
 from flask_login import logout_user, login_user
@@ -9,6 +11,7 @@ from flask_login import logout_user, login_user
 from data import db_session
 
 from data import jobs_api
+from data import users_api
 
 from data.users import User
 from data.jobs import Jobs
@@ -59,6 +62,7 @@ def reqister():
             speciality=form.speciality.data,
             address=form.address.data,
             email=form.email.data,
+            city_from=form.city_from.data
         )
         user.set_password(form.password.data)
         db_sess.add(user)
@@ -89,7 +93,7 @@ def logout():
     return redirect("/")
 
 
-@app.route('/job',  methods=['GET', 'POST'])
+@app.route('/job', methods=['GET', 'POST'])
 @login_required
 def add_job():
     form = JobsForm()
@@ -150,7 +154,7 @@ def edit_job(id):
 def job_delete(id):
     db_sess = db_session.create_session()
     job = db_sess.query(Jobs).filter(Jobs.id == id,
-                                      ((Jobs.user == current_user) | (current_user.id == 1))).first()
+                                     ((Jobs.user == current_user) | (current_user.id == 1))).first()
     if job:
         db_sess.delete(job)
         db_sess.commit()
@@ -159,7 +163,7 @@ def job_delete(id):
     return redirect('/')
 
 
-@app.route('/department',  methods=['GET', 'POST'])
+@app.route('/department', methods=['GET', 'POST'])
 @login_required
 def add_department():
     form = DepartmentForm()
@@ -186,7 +190,7 @@ def edit_department(id):
         db_sess = db_session.create_session()
         department = db_sess.query(Department).filter(Department.id == id,
                                                       ((Department.user == current_user) | (
-                                                                  current_user.id == 1))).first()
+                                                              current_user.id == 1))).first()
         if department:
             form.title.data = department.title
             form.members.data = department.members
@@ -197,7 +201,7 @@ def edit_department(id):
         db_sess = db_session.create_session()
         department = db_sess.query(Department).filter(Department.id == id,
                                                       ((Department.user == current_user) | (
-                                                                  current_user.id == 1))).first()
+                                                              current_user.id == 1))).first()
         if department:
             department.title = form.title.data
             department.members = form.members.data
@@ -233,9 +237,36 @@ def department_log():
     return render_template("department_log.html", departments=departments)
 
 
+@app.route("/users_show/<int:user_id>")
+def users_show(user_id):
+    user = requests.get(f'http://localhost:8080/api/users/{user_id}').json()["user"]
+    hometown = user["city_from"]
+    params = dict(
+        apikey="40d1649f-0493-4b70-98ba-98533de7710b",
+        geocode=hometown,
+        format="json"
+    )
+    json_response = requests.get("http://geocode-maps.yandex.ru/1.x/", params=params).json()
+    coodrinates = json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["Point"]["pos"]
+    coodrinates = ','.join(coodrinates.split())
+    url = f"http://static-maps.yandex.ru/1.x/?ll={coodrinates}&spn=0.02,0.02&l=sat"
+    return render_template("users_show.html", user=user, url=url)
+
+
+@app.errorhandler(404)
+def not_found(error):
+    return make_response(jsonify({'error': 'Not found'}), 404)
+
+
+@app.errorhandler(400)
+def bad_request(_):
+    return make_response(jsonify({'error': 'Bad Request'}), 400)
+
+
 def main():
     db_session.global_init("db/mars.db")
     app.register_blueprint(jobs_api.blueprint)
+    app.register_blueprint(users_api.blueprint)
     app.run(port=8080, host='127.0.0.1')
 
 
