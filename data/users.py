@@ -1,5 +1,7 @@
 import datetime
 import sqlalchemy
+
+from sqlalchemy_serializer import SerializerMixin
 from sqlalchemy import orm
 
 from .db_session import SqlAlchemyBase
@@ -9,7 +11,7 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
-class User(SqlAlchemyBase, UserMixin):
+class User(SqlAlchemyBase, UserMixin, SerializerMixin):
     __tablename__ = 'users'
 
     id = sqlalchemy.Column(sqlalchemy.Integer,
@@ -26,8 +28,8 @@ class User(SqlAlchemyBase, UserMixin):
     modified_date = sqlalchemy.Column(sqlalchemy.DateTime,
                                       default=datetime.datetime.now)
 
-    jobs = orm.relationship("Jobs", back_populates='user')
-    department = orm.relationship("Department", back_populates='user')
+    jobs = orm.relationship("Jobs", back_populates='user', cascade="delete")
+    department = orm.relationship("Department", back_populates='user', cascade="delete")
 
     def __repr__(self):
         return f"<Colonist> {self.id} {self.surname} {self.name}"

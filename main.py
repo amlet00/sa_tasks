@@ -2,9 +2,14 @@ import datetime
 
 from flask import Flask, request, abort
 from flask import render_template, redirect
+from flask import make_response, jsonify
 
 from flask_login import LoginManager, login_required, current_user
 from flask_login import logout_user, login_user
+
+from flask_restful import Api
+
+from api.users_resource import UsersListResource, UserResource
 
 from data import db_session
 
@@ -18,6 +23,8 @@ from forms.department import DepartmentForm
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
+
+api = Api(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -148,7 +155,7 @@ def edit_job(id):
 def job_delete(id):
     db_sess = db_session.create_session()
     job = db_sess.query(Jobs).filter(Jobs.id == id,
-                                      ((Jobs.user == current_user) | (current_user.id == 1))).first()
+                                     ((current_user == Jobs.user) | (current_user.id == 1))).first()
     if job:
         db_sess.delete(job)
         db_sess.commit()
@@ -231,9 +238,15 @@ def department_log():
     return render_template("department_log.html", departments=departments)
 
 
+@app.errorhandler(400)
+def bad_request(_):
+    return make_response(jsonify({'error': 'Bad Request'}), 400)
+
+
 def main():
     db_session.global_init("db/mars.db")
-
+    api.add_resource(UsersListResource, '/api/v2/users')
+    api.add_resource(UserResource, '/api/v2/users/<int:user_id>')
     app.run(port=8080, host='127.0.0.1')
 
 
