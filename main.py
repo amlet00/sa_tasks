@@ -10,6 +10,7 @@ from flask_login import logout_user, login_user
 from flask_restful import Api
 
 from api.users_resource import UsersListResource, UserResource
+from api.jobs_resource import JobsListResource, JobsResource
 
 from data import db_session
 
@@ -247,6 +248,8 @@ def main():
     db_session.global_init("db/mars.db")
     api.add_resource(UsersListResource, '/api/v2/users')
     api.add_resource(UserResource, '/api/v2/users/<int:user_id>')
+    api.add_resource(JobsListResource, '/api/v2/jobs')
+    api.add_resource(JobsResource, '/api/v2/jobs/<int:job_id>')
     app.run(port=8080, host='127.0.0.1')
 
 
